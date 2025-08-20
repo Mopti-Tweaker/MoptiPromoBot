@@ -1,3 +1,19 @@
+// --- Keepalive HTTP server for Render Web Service ---
+const http = require("http");
+const PORT = process.env.PORT || 3000;
+
+const server = http.createServer((req, res) => {
+  if (req.url === "/health") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    return res.end("ok");
+  }
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("PromoBot is running");
+});
+
+server.listen(PORT, () => console.log(`[keepalive] HTTP listening on ${PORT}`));
+// ----------------------------------------------------
+
 const {
   Client,
   GatewayIntentBits,
@@ -43,7 +59,6 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
-    // 🔹 On prend uniquement le premier produit (le plus pertinent)
     const product = results[0];
     const bestOffers = (product.offers || []).sort(
       (a, b) => parseFloat(a.price) - parseFloat(b.price)
@@ -67,7 +82,6 @@ client.on("interactionCreate", async (interaction) => {
 
     if (product.image_url) embed.setImage(product.image_url);
 
-    // 🔹 Bouton pour voir plus d'offres
     const button = new ButtonBuilder()
       .setLabel("Voir plus d'offres")
       .setStyle(ButtonStyle.Primary)
@@ -77,12 +91,10 @@ client.on("interactionCreate", async (interaction) => {
 
     await interaction.followUp({ embeds: [embed], components: [row] });
 
-    // Gestion du clic sur le bouton
     client.on("interactionCreate", async (btnInteraction) => {
       if (!btnInteraction.isButton()) return;
       if (btnInteraction.customId !== "voir_offres") return;
 
-      // 🔹 Création d'une liste des 5 meilleures offres
       const list = bestOffers
         .slice(0, 5)
         .map(
